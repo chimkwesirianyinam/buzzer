@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Buzzer – Host</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="card">
+    <div class="row">
+      <div class="grow">
+        <h2>Room code</h2>
+        <div class="code" id="code">····</div>
+      </div>
+      <div style="text-align:right">
+        <span class="pill off" id="conn">connecting…</span>
+        <div style="margin-top:10px"><span class="pill off" id="phase">—</span></div>
+      </div>
+    </div>
+    <p class="muted" style="margin:14px 0 8px">Contestants join at:</p>
+    <div class="row">
+      <input type="text" id="joinUrl" readonly class="grow">
+      <button id="copy">Copy link</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <button class="green" id="open" style="font-size:1.2rem;padding:16px 26px">▶ Open buzzers (new round)</button>
+      <button class="red" id="lock">⏹ Lock</button>
+      <button id="reset">Clear</button>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <label class="row" style="gap:8px;cursor:pointer">
+        <input type="checkbox" id="lockFirst"> Lock automatically after first buzz
+      </label>
+      <label class="row" style="gap:8px;cursor:pointer">
+        <input type="checkbox" id="sound" checked> Sound
+      </label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Buzz order</h2>
+    <ol class="buzz-list" id="buzzes"></ol>
+    <div class="empty" id="noBuzz">No buzzes yet.</div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:8px">
+      <h2 class="grow" style="margin:0">Contestants (<span id="count">0</span>)</h2>
+      <button class="small" id="resetScores">Reset scores</button>
+    </div>
+    <div class="players" id="players"></div>
+    <div class="empty" id="noPlayers">Waiting for contestants to join…</div>
+  </div>
+
+  <script src="/common.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const KEY = 'buzzer_host';
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(KEY)); } catch {}
+    let lastFirstId = null, audioCtx = null;
+
+    const sock = createSocket({
+      onStatus(ok) {
+        $('conn').textContent = ok ? 'connected' : 'reconnecting…';
+        $('conn').className = 'pill ' + (ok ? 'open' : 'off');
+      },
+      onOpen() {
+        if (saved && saved.code && saved.token) sock.send({ t: 'host_resume', code: saved.code, token: saved.token });
+        else sock.send({ t: 'host_create' });
+      },
+      onMessage(m) {
+        if (m.t === 'host_fail') { saved = null; localStorage.removeItem(KEY); sock.send({ t: 'host_create' }); }
+        else if (m.t === 'host_ok') {
+          saved = { code: m.code, token: m.token };
+          localStorage.setItem(KEY, JSON.stringify(saved));
+          $('code').textContent = m.code;
+          $('joinUrl').value = location.origin + '/play?code=' + m.code;
+        }
+        else if (m.t === 'state') render(m);
+      },
+    });
+
+    function beep() {
+      if (!$('sound').checked) return;
+      try {
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = 'square'; o.frequency.value = 880;
+        g.gain.setValueAtTime(0.25, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(); o.stop(audioCtx.currentTime + 0.35);
+      } catch {}
+    }
+
+    function render(s) {
+      $('code').textContent = s.code;
+      $('phase').textContent = s.phase === 'open' ? 'BUZZERS OPEN' : 'LOCKED';
+      $('phase').className = 'pill ' + s.phase;
+      $('lockFirst').checked = s.lockOnFirst;
+      $('count').textContent = s.players.length;
+
+      const list = $('buzzes'); list.replaceChildren();
+      for (const b of s.buzzes) {
+        const t = b.pos === 1 ? `${(b.sinceOpen / 1000).toFixed(2)}s after opening` : `+${b.behindFirst} ms`;
+        list.append(el('li', { class: b.pos === 1 ? 'first' : '' },
+          el('span', { class: 'pos' }, '#' + b.pos),
+          el('span', { class: 'nm' }, b.name),
+          el('span', { class: 'tm' }, t)));
+      }
+      $('noBuzz').style.display = s.buzzes.length ? 'none' : '';
+
+      const firstId = s.buzzes[0] ? s.buzzes[0].id : null;
+      if (firstId && firstId !== lastFirstId) { beep(); if (navigator.vibrate) navigator.vibrate(150); }
+      lastFirstId = firstId;
+
+      const box = $('players'); box.replaceChildren();
+      for (const p of s.players) {
+        box.append(el('div', { class: 'player' },
+          el('span', { class: 'dot' + (p.connected ? '' : ' off'), title: p.connected ? 'online' : 'offline' }),
+          el('span', { class: 'nm' }, p.name),
+          el('button', { class: 'small', onclick: () => sock.send({ t: 'score', playerId: p.id, delta: -1 }) }, '−'),
+          el('span', { class: 'score' }, String(p.score)),
+          el('button', { class: 'small green', onclick: () => sock.send({ t: 'score', playerId: p.id, delta: 1 }) }, '+'),
+          el('button', { class: 'small red', title: 'Remove', onclick: () => { if (confirm('Remove ' + p.name + '?')) sock.send({ t: 'kick', playerId: p.id }); } }, '✕')));
+      }
+      $('noPlayers').style.display = s.players.length ? 'none' : '';
+    }
+
+    $('open').onclick = () => { beep.primed = true; try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); audioCtx.resume(); } catch {} sock.send({ t: 'open' }); };
+    $('lock').onclick = () => sock.send({ t: 'lock' });
+    $('reset').onclick = () => sock.send({ t: 'reset' });
+    $('lockFirst').onchange = (e) => sock.send({ t: 'lock_on_first', value: e.target.checked });
+    $('resetScores').onclick = () => { if (confirm('Reset all scores to 0?')) sock.send({ t: 'reset_scores' }); };
+    $('copy').onclick = async () => {
+      try { await navigator.clipboard.writeText($('joinUrl').value); $('copy').textContent = 'Copied!'; }
+      catch { $('joinUrl').select(); document.execCommand('copy'); $('copy').textContent = 'Copied!'; }
+      setTimeout(() => ($('copy').textContent = 'Copy link'), 1500);
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quiz Buzzer</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="center" style="margin-top:8vh">
+    <h1 style="font-size:2.6rem">🔔 Quiz Buzzer</h1>
+    <p class="muted">Real-time buzzers for quiz nights, classrooms and game shows.</p>
+  </div>
+
+  <div class="card">
+    <h2>I'm a contestant</h2>
+    <form id="joinForm" class="row" style="margin-top:8px">
+      <input class="grow" type="text" id="code" placeholder="Room code" maxlength="4"
+             autocapitalize="characters" autocomplete="off" style="text-transform:uppercase;letter-spacing:.2em;min-width:140px">
+      <button class="blue" type="submit">Join</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>I'm the host</h2>
+    <p class="muted">Create a room, share the code, and see who buzzes in first.</p>
+    <a href="/host"><button class="green">Host a game</button></a>
+  </div>
+
+  <script>
+    document.getElementById('joinForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const c = document.getElementById('code').value.trim().toUpperCase();
+      location.href = '/play' + (c ? '?code=' + encodeURIComponent(c) : '');
+    });
+  </script>
+</body>
+</html>

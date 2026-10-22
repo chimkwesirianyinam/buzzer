@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Buzzer</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="play">
+  <!-- Join screen -->
+  <div id="joinView">
+    <div class="center" style="margin:6vh 0 20px"><h1>🔔 Join a game</h1></div>
+    <form id="joinForm" class="card">
+      <p class="muted" style="margin-top:0">Room code</p>
+      <input type="text" id="code" maxlength="4" autocapitalize="characters" autocomplete="off"
+             style="text-transform:uppercase;letter-spacing:.3em;text-align:center;font-size:1.6rem">
+      <p class="muted">Your name</p>
+      <input type="text" id="name" maxlength="20" autocomplete="nickname">
+      <div class="err" id="err"></div>
+      <button class="blue" type="submit" style="width:100%;font-size:1.2rem;padding:16px">Join</button>
+    </form>
+  </div>
+
+  <!-- Buzzer screen -->
+  <div id="playView" style="display:none;flex:1;flex-direction:column">
+    <div class="topbar">
+      <div><strong id="who"></strong> <span class="muted">· room <span id="room"></span></span></div>
+      <div class="row"><span class="pill off" id="conn">…</span><span class="pill off">Score: <span id="score">0</span></span></div>
+    </div>
+    <div class="stage">
+      <button id="buzzer" class="locked" disabled>Wait</button>
+      <div class="status" id="status"></div>
+    </div>
+  </div>
+
+  <script src="/common.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const params = new URLSearchParams(location.search);
+    const urlCode = (params.get('code') || '').toUpperCase().slice(0, 4);
+    const lastCode = localStorage.getItem('buzzer_last_code') || '';
+    $('code').value = urlCode || lastCode;
+    $('name').value = localStorage.getItem('buzzer_name') || '';
+
+    let sock = null, joined = false, state = null;
+
+    function getSaved(code) { try { return JSON.parse(localStorage.getItem('buzzer_p_' + code)); } catch { return null; } }
+
+    function connectAndJoin(code, name) {
+      if (sock) sock.close();
+      joined = false;
+      const saved = getSaved(code);
+      sock = createSocket({
+        onStatus(ok) {
+          $('conn').textContent = ok ? 'online' : 'reconnecting…';
+          $('conn').className = 'pill ' + (ok ? 'open' : 'off');
+        },
+        onOpen() {
+          const s = getSaved(code);
+          sock.send({ t: 'join', code, name, playerId: s && s.id });
+        },
+        onMessage(m) {
+          if (m.t === 'join_fail') {
+            // Saved identity may be stale (room restarted) – if we never joined, show the error.
+            if (!joined) { sock.close(); $('err').textContent = m.reason; showJoin(); }
+            else { localStorage.removeItem('buzzer_p_' + code); location.reload(); }
+          } else if (m.t === 'join_ok') {
+            joined = true;
+            localStorage.setItem('buzzer_p_' + m.code, JSON.stringify({ id: m.playerId }));
+            localStorage.setItem('buzzer_last_code', m.code);
+            localStorage.setItem('buzzer_name', name);
+            $('room').textContent = m.code;
+            $('joinView').style.display = 'none';
+            $('playView').style.display = 'flex';
+          } else if (m.t === 'state') { state = m; render(); }
+          else if (m.t === 'kicked') {
+            sock.close();
+            localStorage.removeItem('buzzer_p_' + code);
+            alert('You were removed from the room by the host.');
+            location.href = '/play';
+          }
+        },
+      });
+    }
+
+    function showJoin() { $('playView').style.display = 'none'; $('joinView').style.display = ''; }
+
+    function render() {
+      const s = state, you = s.you, b = $('buzzer');
+      $('who').textContent = you.name;
+      $('score').textContent = you.score;
+      b.className = '';
+      if (you.pos) {
+        b.className = 'me' + (you.pos === 1 ? ' first' : '');
+        b.disabled = true;
+        b.textContent = you.pos === 1 ? 'FIRST!' : 'Buzzed #' + you.pos;
+        $('status').textContent = you.pos === 1 ? 'You buzzed in first!' : (s.winner ? s.winner + ' was first' : '');
+      } else if (s.phase === 'open') {
+        b.className = 'ready';
+        b.disabled = false;
+        b.textContent = 'BUZZ!';
+        $('status').textContent = s.winner ? s.winner + ' has buzzed — you can still buzz' : 'Go!';
+      } else {
+        b.className = 'locked';
+        b.disabled = true;
+        b.textContent = 'Locked';
+        $('status').textContent = s.winner ? s.winner + ' buzzed first' : 'Wait for the host to open the buzzers';
+      }
+    }
+
+    function buzz() {
+      if (!state || state.phase !== 'open' || state.you.pos) return;
+      sock.send({ t: 'buzz' });
+      if (navigator.vibrate) navigator.vibrate(60);
+      // Optimistic feedback; the server's reply is the source of truth.
+      $('buzzer').className = 'me'; $('buzzer').textContent = '…'; $('buzzer').disabled = true;
+    }
+    $('buzzer').addEventListener('pointerdown', (e) => { e.preventDefault(); buzz(); });
+    document.addEventListener('keydown', (e) => { if (e.code === 'Space' && !e.repeat && joined) { e.preventDefault(); buzz(); } });
+
+    $('joinForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      $('err').textContent = '';
+      const code = $('code').value.trim().toUpperCase();
+      const name = $('name').value.trim();
+      if (code.length !== 4) return ($('err').textContent = 'Enter the 4-letter room code.');
+      if (!getSaved(code) && !name) return ($('err').textContent = 'Enter your name.');
+      connectAndJoin(code, name);
+    });
+
+    // Auto-rejoin if we were already in this room (e.g. page refresh).
+    if ($('code').value && getSaved($('code').value) && $('name').value) {
+      connectAndJoin($('code').value, $('name').value);
+    }
+  </script>
+</body>
+</html>

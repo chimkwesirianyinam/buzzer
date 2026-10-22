@@ -1,7 +1,7 @@
 {
-  "name": "quiz-buzzer",
+  "name": "pic-competition-software",
   "version": "1.0.0",
-  "description": "Real-time quiz buzzer with host and contestant interfaces",
+  "description": "PIC Competition Software - inter-school quiz buzzer",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

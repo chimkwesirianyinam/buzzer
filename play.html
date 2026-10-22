@@ -3,135 +3,238 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>Buzzer</title>
+  <title>Contestant | PIC Competition Software</title>
+  <link rel="icon" href="/pic-logo.png">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body class="play">
+  <header class="site-header">
+    <div class="hdr-inner">
+      <div class="brand">
+        <img class="brand-logo" src="/pic-logo.png" alt="Penny International College crest">
+        <div>
+          <div class="brand-title">PIC Competition Software</div>
+          <div class="brand-sub">Penny International College</div>
+        </div>
+      </div>
+      <div class="comp-slot filled hidden" id="compSlot"></div>
+    </div>
+  </header>
+
   <!-- Join screen -->
-  <div id="joinView">
-    <div class="center" style="margin:6vh 0 20px"><h1>🔔 Join a game</h1></div>
-    <form id="joinForm" class="card">
-      <p class="muted" style="margin-top:0">Room code</p>
-      <input type="text" id="code" maxlength="4" autocapitalize="characters" autocomplete="off"
-             style="text-transform:uppercase;letter-spacing:.3em;text-align:center;font-size:1.6rem">
-      <p class="muted">Your name</p>
-      <input type="text" id="name" maxlength="20" autocomplete="nickname">
-      <div class="err" id="err"></div>
-      <button class="blue" type="submit" style="width:100%;font-size:1.2rem;padding:16px">Join</button>
+  <main class="play-wrap" id="joinView">
+    <form class="card" id="joinForm" novalidate>
+      <div class="card-title">Join the competition</div>
+
+      <label class="field-label" for="code" style="margin-top:0">1. Room code</label>
+      <input type="text" id="code" maxlength="4" autocapitalize="characters" autocomplete="off" spellcheck="false"
+             style="text-transform:uppercase;letter-spacing:.35em;text-align:center;font-family:var(--serif);font-size:1.7rem;font-weight:700" placeholder="ABCD">
+      <div class="msg" id="codeMsg" role="status"></div>
+
+      <div id="schoolStep" class="hidden">
+        <label class="field-label">2. Choose your school</label>
+        <div class="tiles" id="tiles"></div>
+
+        <label class="field-label" for="name">3. Your name</label>
+        <input type="text" id="name" maxlength="24" autocomplete="nickname" placeholder="Enter your name">
+      </div>
+
+      <div class="msg err" id="err" role="alert" style="margin:10px 0"></div>
+      <button class="btn btn-primary btn-lg btn-block" type="submit" id="joinBtn">Join</button>
     </form>
-  </div>
+  </main>
 
   <!-- Buzzer screen -->
-  <div id="playView" style="display:none;flex:1;flex-direction:column">
-    <div class="topbar">
-      <div><strong id="who"></strong> <span class="muted">· room <span id="room"></span></span></div>
-      <div class="row"><span class="pill off" id="conn">…</span><span class="pill off">Score: <span id="score">0</span></span></div>
+  <main class="play-wrap hidden" id="playView">
+    <section class="card team-banner">
+      <div id="tbLogo"></div>
+      <div style="min-width:0">
+        <div class="tb-school" id="tbSchool"></div>
+        <div class="tb-student" id="tbStudent"></div>
+      </div>
+      <div class="tb-score"><div class="score" id="tbScore">0</div><small>School score</small></div>
+    </section>
+    <section class="stage">
+      <button id="buzzer" type="button" disabled>Locked</button>
+      <div class="status" id="status" aria-live="polite"></div>
+    </section>
+    <div class="row" style="justify-content:center">
+      <span class="pill off" id="conn">Connecting</span>
+      <span class="pill off">Room <span id="room"></span></span>
     </div>
-    <div class="stage">
-      <button id="buzzer" class="locked" disabled>Wait</button>
-      <div class="status" id="status"></div>
-    </div>
-  </div>
+  </main>
+
+  <div class="foot">PIC Competition Software &middot; Penny International College</div>
 
   <script src="/common.js"></script>
   <script>
     const $ = (id) => document.getElementById(id);
     const params = new URLSearchParams(location.search);
-    const urlCode = (params.get('code') || '').toUpperCase().slice(0, 4);
-    const lastCode = localStorage.getItem('buzzer_last_code') || '';
-    $('code').value = urlCode || lastCode;
-    $('name').value = localStorage.getItem('buzzer_name') || '';
+    const savedKey = (c) => 'pic_player_' + c;
+    const getSaved = (c) => { try { return JSON.parse(safeGet(savedKey(c))); } catch { return null; } };
 
-    let sock = null, joined = false, state = null;
+    let sock = null, joined = false, state = null, room = null, chosen = null;
 
-    function getSaved(code) { try { return JSON.parse(localStorage.getItem('buzzer_p_' + code)); } catch { return null; } }
+    // ---------- competition icon ----------
+    function showComp(code, v) {
+      const slot = $('compSlot');
+      slot.replaceChildren();
+      if (v) { slot.append(el('img', { src: `/logo/${code}/_comp?v=${v}`, alt: 'Competition icon' })); slot.classList.remove('hidden'); }
+      else slot.classList.add('hidden');
+    }
 
-    function connectAndJoin(code, name) {
+    // ---------- join screen ----------
+    async function loadRoom(code) {
+      $('codeMsg').textContent = ''; $('codeMsg').className = 'msg';
+      try {
+        const r = await fetch('/api/room/' + encodeURIComponent(code), { cache: 'no-store' });
+        if (r.status === 404) {
+          room = null; $('schoolStep').classList.add('hidden');
+          $('codeMsg').textContent = 'Room not found. Check the code.'; $('codeMsg').className = 'msg err';
+          return;
+        }
+        room = await r.json();
+      } catch {
+        $('codeMsg').textContent = 'Could not reach the server. Check your connection.'; $('codeMsg').className = 'msg err';
+        return;
+      }
+      showComp(room.code, room.compV);
+      if (!room.schools.length) {
+        $('schoolStep').classList.add('hidden');
+        $('codeMsg').textContent = 'The host has not added any schools yet. Try again shortly.'; $('codeMsg').className = 'msg';
+        return;
+      }
+      $('schoolStep').classList.remove('hidden');
+      if (chosen && !room.schools.some((s) => s.id === chosen)) chosen = null;
+      renderTiles();
+    }
+
+    function renderTiles() {
+      const box = $('tiles'); box.replaceChildren();
+      for (const s of room.schools) {
+        const full = s.count >= room.teamSize;
+        const b = el('button', { type: 'button', class: 'tile', 'aria-pressed': String(chosen === s.id), disabled: full },
+          logoNode(room.code, s.id, s.name, s.logoV, 'md'),
+          el('span', { class: 'tn' }, s.name),
+          el('span', { class: 'tc' }, full ? 'Team full' : s.count + ' of ' + room.teamSize + ' joined'));
+        b.addEventListener('click', () => { chosen = s.id; renderTiles(); $('err').textContent = ''; });
+        box.append(b);
+      }
+    }
+
+    $('code').addEventListener('input', (e) => {
+      const v = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
+      e.target.value = v;
+      if (v.length === 4) loadRoom(v);
+      else { room = null; $('schoolStep').classList.add('hidden'); $('codeMsg').textContent = ''; }
+    });
+
+    $('joinForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      $('err').textContent = '';
+      const code = $('code').value.trim().toUpperCase();
+      if (code.length !== 4) return ($('err').textContent = 'Enter the 4-letter room code.');
+      if (!room) return ($('err').textContent = 'Enter a valid room code first.');
+      if (!chosen) return ($('err').textContent = 'Choose your school.');
+      const name = $('name').value.trim();
+      if (!name) return ($('err').textContent = 'Enter your name.');
+      connectAndJoin(code, chosen, name);
+    });
+
+    function showJoin() { $('playView').classList.add('hidden'); $('joinView').classList.remove('hidden'); }
+
+    // ---------- connection ----------
+    function connectAndJoin(code, schoolId, name) {
       if (sock) sock.close();
       joined = false;
-      const saved = getSaved(code);
       sock = createSocket({
         onStatus(ok) {
-          $('conn').textContent = ok ? 'online' : 'reconnecting…';
+          $('conn').textContent = ok ? 'Online' : 'Reconnecting';
           $('conn').className = 'pill ' + (ok ? 'open' : 'off');
         },
         onOpen() {
-          const s = getSaved(code);
-          sock.send({ t: 'join', code, name, playerId: s && s.id });
+          const sv = getSaved(code);
+          sock.send({ t: 'join', code, schoolId, name, playerId: sv && sv.id });
         },
         onMessage(m) {
           if (m.t === 'join_fail') {
-            // Saved identity may be stale (room restarted) – if we never joined, show the error.
-            if (!joined) { sock.close(); $('err').textContent = m.reason; showJoin(); }
-            else { localStorage.removeItem('buzzer_p_' + code); location.reload(); }
+            safeDel(savedKey(code));
+            if (!joined) {
+              sock.close(); $('err').textContent = m.reason; showJoin();
+              if (/^[A-Z]{4}$/.test(code)) loadRoom(code);
+            } else location.reload();
           } else if (m.t === 'join_ok') {
             joined = true;
-            localStorage.setItem('buzzer_p_' + m.code, JSON.stringify({ id: m.playerId }));
-            localStorage.setItem('buzzer_last_code', m.code);
-            localStorage.setItem('buzzer_name', name);
+            safeSet(savedKey(m.code), JSON.stringify({ id: m.playerId, schoolId: m.schoolId, name }));
+            safeSet('pic_last_code', m.code);
             $('room').textContent = m.code;
-            $('joinView').style.display = 'none';
-            $('playView').style.display = 'flex';
+            $('joinView').classList.add('hidden');
+            $('playView').classList.remove('hidden');
           } else if (m.t === 'state') { state = m; render(); }
           else if (m.t === 'kicked') {
-            sock.close();
-            localStorage.removeItem('buzzer_p_' + code);
-            alert('You were removed from the room by the host.');
+            sock.close(); safeDel(savedKey(code));
+            alert('You have been removed from this competition by the host.');
             location.href = '/play';
           }
         },
       });
     }
 
-    function showJoin() { $('playView').style.display = 'none'; $('joinView').style.display = ''; }
+    // ---------- buzzer screen ----------
+    function ordinal(n) { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
 
     function render() {
-      const s = state, you = s.you, b = $('buzzer');
-      $('who').textContent = you.name;
-      $('score').textContent = you.score;
+      const s = state, y = s.you, b = $('buzzer'), st = $('status');
+      $('tbSchool').textContent = y.school;
+      $('tbStudent').textContent = y.name;
+      $('tbScore').textContent = y.score;
+      $('tbLogo').replaceChildren(logoNode(s.code, y.schoolId, y.school, y.logoV, 'lg'));
+      showComp(s.code, s.compV);
+      st.replaceChildren();
       b.className = '';
-      if (you.pos) {
-        b.className = 'me' + (you.pos === 1 ? ' first' : '');
+
+      if (s.teamPos) {
         b.disabled = true;
-        b.textContent = you.pos === 1 ? 'FIRST!' : 'Buzzed #' + you.pos;
-        $('status').textContent = you.pos === 1 ? 'You buzzed in first!' : (s.winner ? s.winner + ' was first' : '');
+        if (s.teamPos === 1) { b.className = 'first'; b.textContent = 'First'; }
+        else { b.className = 'taken'; b.textContent = 'Buzzed'; }
+        st.append(s.byYou ? 'You buzzed for ' + y.school : (s.byName || 'A teammate') + ' buzzed for your school',
+          el('small', {}, s.teamPos === 1 ? 'Your school was first to buzz.' : 'Your school is ' + ordinal(s.teamPos) + ' in the buzz order.'));
       } else if (s.phase === 'open') {
-        b.className = 'ready';
-        b.disabled = false;
-        b.textContent = 'BUZZ!';
-        $('status').textContent = s.winner ? s.winner + ' has buzzed — you can still buzz' : 'Go!';
+        b.disabled = false; b.className = 'ready'; b.textContent = 'Buzz';
+        st.append('Buzzers are open',
+          s.winner ? el('small', {}, s.winner.school + ' has buzzed. You can still buzz.') : el('small', {}, 'Tap the button to answer for ' + y.school + '.'));
       } else {
-        b.className = 'locked';
-        b.disabled = true;
-        b.textContent = 'Locked';
-        $('status').textContent = s.winner ? s.winner + ' buzzed first' : 'Wait for the host to open the buzzers';
+        b.disabled = true; b.textContent = 'Locked';
+        if (s.winner) st.append(s.winner.school + ' buzzed first', el('small', {}, s.winner.student));
+        else st.append('Waiting for the host', el('small', {}, 'The buzzers will open for the next question.'));
       }
     }
 
     function buzz() {
-      if (!state || state.phase !== 'open' || state.you.pos) return;
+      if (!state || state.phase !== 'open' || state.teamPos) return;
       sock.send({ t: 'buzz' });
       if (navigator.vibrate) navigator.vibrate(60);
-      // Optimistic feedback; the server's reply is the source of truth.
-      $('buzzer').className = 'me'; $('buzzer').textContent = '…'; $('buzzer').disabled = true;
+      // Immediate feedback; the server's reply is the source of truth.
+      const b = $('buzzer'); b.className = 'taken'; b.textContent = '...'; b.disabled = true;
     }
     $('buzzer').addEventListener('pointerdown', (e) => { e.preventDefault(); buzz(); });
-    document.addEventListener('keydown', (e) => { if (e.code === 'Space' && !e.repeat && joined) { e.preventDefault(); buzz(); } });
-
-    $('joinForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      $('err').textContent = '';
-      const code = $('code').value.trim().toUpperCase();
-      const name = $('name').value.trim();
-      if (code.length !== 4) return ($('err').textContent = 'Enter the 4-letter room code.');
-      if (!getSaved(code) && !name) return ($('err').textContent = 'Enter your name.');
-      connectAndJoin(code, name);
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && !e.repeat && joined) { e.preventDefault(); buzz(); }
     });
 
-    // Auto-rejoin if we were already in this room (e.g. page refresh).
-    if ($('code').value && getSaved($('code').value) && $('name').value) {
-      connectAndJoin($('code').value, $('name').value);
-    }
+    // ---------- start ----------
+    (function init() {
+      const urlCode = (params.get('code') || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
+      const code = urlCode || (safeGet('pic_last_code') || '');
+      $('code').value = code;
+      const sv = code.length === 4 ? getSaved(code) : null;
+      if (sv && sv.schoolId && sv.name) {
+        // Rejoin automatically after a page refresh.
+        connectAndJoin(code, sv.schoolId, sv.name);
+      } else if (code.length === 4) {
+        loadRoom(code);
+      }
+    })();
   </script>
 </body>
 </html>

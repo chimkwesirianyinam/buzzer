@@ -3,29 +3,46 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Quiz Buzzer</title>
+  <title>PIC Competition Software</title>
+  <link rel="icon" href="/pic-logo.png">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <div class="center" style="margin-top:8vh">
-    <h1 style="font-size:2.6rem">🔔 Quiz Buzzer</h1>
-    <p class="muted">Real-time buzzers for quiz nights, classrooms and game shows.</p>
-  </div>
+  <header class="site-header">
+    <div class="hdr-inner">
+      <div class="brand">
+        <img class="brand-logo" src="/pic-logo.png" alt="Penny International College crest">
+        <div>
+          <div class="brand-title">PIC Competition Software</div>
+          <div class="brand-sub">Penny International College</div>
+        </div>
+      </div>
+    </div>
+  </header>
 
-  <div class="card">
-    <h2>I'm a contestant</h2>
-    <form id="joinForm" class="row" style="margin-top:8px">
-      <input class="grow" type="text" id="code" placeholder="Room code" maxlength="4"
-             autocapitalize="characters" autocomplete="off" style="text-transform:uppercase;letter-spacing:.2em;min-width:140px">
-      <button class="blue" type="submit">Join</button>
-    </form>
-  </div>
+  <main class="landing">
+    <div class="landing-hero">
+      <h1>Inter-School Competition Buzzer</h1>
+      <p>Real-time buzzers for school quiz competitions.</p>
+    </div>
 
-  <div class="card">
-    <h2>I'm the host</h2>
-    <p class="muted">Create a room, share the code, and see who buzzes in first.</p>
-    <a href="/host"><button class="green">Host a game</button></a>
-  </div>
+    <section class="card">
+      <div class="card-title">Contestants</div>
+      <form id="joinForm" class="row" novalidate>
+        <input class="grow" type="text" id="code" placeholder="Room code" maxlength="4" aria-label="Room code"
+               autocapitalize="characters" autocomplete="off" spellcheck="false"
+               style="text-transform:uppercase;letter-spacing:.3em;font-family:var(--serif);font-weight:700;min-width:150px">
+        <button class="btn btn-primary" type="submit">Join</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="card-title">Competition host</div>
+      <p class="muted" style="margin-bottom:14px">Register the participating schools, open the buzzers and see which school buzzed first.</p>
+      <a href="/host" style="text-decoration:none"><button class="btn btn-primary" type="button">Open host console</button></a>
+    </section>
+  </main>
+  <div class="foot">PIC Competition Software &middot; Penny International College</div>
 
   <script>
     document.getElementById('joinForm').addEventListener('submit', (e) => {

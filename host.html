@@ -8,189 +8,277 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <header class="site-header">
-    <div class="hdr-inner">
-      <div class="brand">
-        <img class="brand-logo" src="/pic-logo.png" alt="Penny International College crest">
-        <div>
-          <div class="brand-title">PIC Competition Software</div>
-          <div class="brand-sub">Penny International College</div>
-        </div>
+  <!-- Host sign-in (only shown when the server has a HOST_PASSWORD) -->
+  <div class="loginbg stage hidden" id="login">
+    <form class="card login-card" id="loginForm" novalidate>
+      <div class="row" style="gap:14px;margin-bottom:18px;flex-wrap:nowrap">
+        <img src="/pic-logo.png" alt="" style="width:56px;height:56px;border-radius:15px;object-fit:contain;box-shadow:var(--shadow-sm)">
+        <div><div class="eyebrow">Quiz master</div><h2 style="margin:0">Host sign-in</h2></div>
       </div>
-      <button type="button" class="comp-slot" id="compSlot" title="Click to set the competition icon"></button>
-    </div>
-  </header>
-  <div class="subbar">
-    <div class="subbar-inner">
-      <span class="subbar-title">Host Console</span>
-      <div class="row">
-        <span class="pill off" id="conn">Connecting</span>
-        <span class="pill off" id="phase">Locked</span>
-      </div>
-    </div>
+      <label class="label" for="pw">Host password</label>
+      <input class="input" type="password" id="pw" autocomplete="current-password" placeholder="Enter the host password">
+      <div class="msg" id="pwMsg" role="alert"></div>
+      <button class="btn primary lg block" type="submit" style="margin-top:6px">Enter the console</button>
+      <p style="text-align:center;margin-top:16px"><a href="/" class="muted" style="font-size:13px;font-weight:700">Back to the start page</a></p>
+    </form>
   </div>
 
-  <main class="page">
-    <div class="notice hidden" id="noSchools">
-      No schools are registered yet. Open <strong>Competition setup</strong> at the bottom of this page,
-      enter each school's name and logo, then press <strong>Save setup</strong>.
-    </div>
-
-    <div class="two-col">
-      <section class="card">
-        <div class="card-title">Session</div>
-        <div class="muted" style="font-size:.85rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700">Room code</div>
-        <div class="code" id="code">----</div>
-        <label class="field-label" for="joinUrl">Student join link</label>
-        <div class="row">
-          <input type="text" id="joinUrl" class="grow" readonly>
-          <button class="btn" id="copy" type="button">Copy link</button>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="card-title">Round control</div>
-        <div class="row">
-          <button class="btn btn-primary btn-lg" id="open" type="button">Open buzzers (new round)</button>
-          <button class="btn btn-danger btn-lg" id="lock" type="button">Lock</button>
-          <button class="btn btn-lg" id="reset" type="button">Clear round</button>
-        </div>
-        <div class="row" style="margin-top:16px;gap:22px">
-          <label class="check"><input type="checkbox" id="lockFirst"> Lock automatically after the first buzz</label>
-          <label class="check"><input type="checkbox" id="sound" checked> Play sound on first buzz</label>
-        </div>
-        <p class="muted" style="margin-top:14px;font-size:.9rem">
-          Each school can buzz once per round. The first student to buzz counts for their school.
-        </p>
-      </section>
-    </div>
-
-    <section class="card">
-      <div class="card-title">Buzz order</div>
-      <div id="firstBox"></div>
-      <ol class="order" id="order"></ol>
-    </section>
-
-    <section class="card">
-      <div class="row" style="margin-bottom:14px">
-        <div class="card-title grow" style="margin:0">Teams</div>
-        <button class="btn btn-sm btn-ghost" id="resetScores" type="button">Reset all scores</button>
+  <div class="shell" id="shell">
+    <aside class="side">
+      <a class="brandbox" href="/">
+        <img class="crest" src="/pic-logo.png" alt="Penny International College crest">
+        <div><div class="t1">PIC Competition Software</div><div class="t2">Penny International College</div></div>
+      </a>
+      <div class="navgroup"><div class="navlabel">Main</div>
+        <button class="nav" data-view="home" type="button"><span data-ic="home"></span><span>Home</span></button>
+        <button class="nav" data-view="console" type="button"><span data-ic="buzzer"></span><span>Live Console</span></button>
+        <button class="nav" data-view="board" type="button"><span data-ic="trophy"></span><span>Scoreboard</span></button>
       </div>
-      <div class="teams" id="teams"></div>
-    </section>
+      <div class="navgroup"><div class="navlabel">Manage</div>
+        <button class="nav" data-view="teams" type="button"><span data-ic="flag"></span><span>Schools &amp; Teams</span></button>
+        <button class="nav hide-sm" data-view="history" type="button"><span data-ic="watch"></span><span>Round History</span><b class="count" id="histCount">0</b></button>
+        <button class="nav hide-sm" id="navDisplay" type="button"><span data-ic="screen"></span><span>Display Screen</span></button>
+      </div>
+      <div class="navgroup"><div class="navlabel">System</div>
+        <button class="nav" data-view="settings" type="button"><span data-ic="sliders"></span><span>Settings</span></button>
+        <button class="nav hide-sm" data-view="help" type="button"><span data-ic="book"></span><span>Help &amp; Guide</span></button>
+      </div>
+      <div class="userbox">
+        <img src="/pic-logo.png" alt="">
+        <div class="grow"><div class="un">Quiz Master</div><div class="ur">Penny International College</div></div>
+        <button class="nav" id="signOut" type="button" title="Sign out" aria-label="Sign out"><span data-ic="exit"></span></button>
+      </div>
+    </aside>
 
-    <section class="card">
-      <details class="setup" id="setup">
-        <summary>
-          <div class="card-title">Competition setup</div>
-          <span class="chev">Show / hide</span>
-        </summary>
-        <p class="muted" style="margin-bottom:8px">
-          Add each participating school with its logo (up to 8 schools, 3 students each).
-          Changes apply when you press <strong>Save setup</strong>. Removing a school removes its students.
-        </p>
-        <div id="setupRows"></div>
-        <div class="row" style="margin-top:14px">
-          <button class="btn" id="addSchool" type="button">Add school</button>
-          <button class="btn btn-primary" id="saveSetup" type="button">Save setup</button>
-          <span class="msg" id="setupMsg" role="status"></span>
-        </div>
+    <main class="main">
+      <div class="topbar">
+        <div class="grow"><h1 id="vTitle">Home</h1><div class="sub" id="vSub"></div></div>
+        <span class="pill off" id="conn">Connecting</span>
+        <button type="button" class="comp-slot" id="compSlot" title="Click to set the competition icon"></button>
+      </div>
 
-        <label class="field-label" style="margin-top:22px">Competition icon</label>
-        <div class="row">
-          <div id="compPreview"></div>
-          <button class="btn btn-sm" id="compUpload" type="button">Upload icon</button>
-          <button class="btn btn-sm btn-ghost" id="compRemove" type="button">Remove icon</button>
-          <span class="muted" style="font-size:.9rem">Shown in the page header for the host and all students.</span>
+      <div class="notice hidden" id="noSchools">
+        No schools are registered yet. Open <a href="#teams" style="color:inherit;font-weight:800">Schools &amp; Teams</a>, enter each school's name and logo, then press <strong>Save setup</strong>.
+      </div>
+
+      <!-- HOME -->
+      <section class="view" id="v-home">
+        <div class="hero stage" id="hero">
+          <div class="slides" id="slides"></div>
+          <div class="art" id="heroArt"></div>
+          <div class="arrows"><button type="button" id="hPrev" aria-label="Previous">&#8249;</button><button type="button" id="hNext" aria-label="Next">&#8250;</button></div>
+          <div class="dots" id="hDots"></div>
         </div>
-      </details>
-    </section>
-  </main>
-  <div class="foot">PIC Competition Software &middot; Penny International College</div>
+        <div class="stats" id="stats"></div>
+        <div class="grid2">
+          <div class="card"><div class="hd"><h3>Leaderboard</h3><span class="pill" id="lbRound"></span></div><ul class="lb" id="homeLb"></ul></div>
+          <div class="stack">
+            <div class="card">
+              <div class="hd"><h3>Live session</h3><span class="grow"></span><div class="beacon" id="beacon1"><div class="lens"></div><div><b></b></div></div></div>
+              <div class="label" style="margin-top:0">Room code</div>
+              <div class="kbds" id="kbds"></div>
+              <div class="label">Student join link</div>
+              <div class="row" style="flex-wrap:nowrap"><input type="text" id="joinUrl" class="input" readonly><button class="btn icon" id="copy" type="button" title="Copy link" aria-label="Copy link"><span data-ic="copy"></span></button></div>
+            </div>
+            <div class="card"><div class="hd"><h3>Recent rounds</h3><span class="grow"></span><a href="#history" class="eyebrow" style="text-decoration:none">View all</a></div><div id="homeRecent"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LIVE CONSOLE -->
+      <section class="view hidden" id="v-console">
+        <div class="card statusbar">
+          <div class="cell"><small>Room</small><b id="code" style="letter-spacing:.2em">----</b></div>
+          <div class="cell"><div class="beacon" id="beacon2"><div class="lens"></div><div><b></b><small></small></div></div></div>
+          <div class="cell"><small>Students online</small><b id="online">0</b></div>
+          <div class="cell"><small>Round</small><b id="roundNo">0</b></div>
+          <div class="grow"></div>
+          <div class="cell" style="text-align:right"><small>Round clock</small><div class="clock" id="clock">00:00.00</div></div>
+        </div>
+        <div class="grid2" style="margin-top:20px">
+          <div class="stack">
+            <div class="stage" style="border-radius:24px;box-shadow:var(--shadow-lg);padding:20px 22px 0">
+              <div class="row" style="justify-content:space-between;position:relative;z-index:6"><div><div class="eyebrow" style="color:#b9d0ff">Buzz podium</div><div style="font-family:var(--display);font-weight:800;font-size:22px;margin-top:4px" id="podRound">Round 1</div></div><span class="chip" id="podFirst"></span></div>
+              <div class="pod-wrap" id="podWrap" style="--ph:380px"><div class="pod-inner" id="podInner"></div></div>
+            </div>
+            <div class="card"><div class="hd"><h3>Buzz order</h3><span class="pill">One buzz per school</span></div><ol class="lb" id="order" style="padding:0"></ol></div>
+          </div>
+          <div class="stack">
+            <div class="card">
+              <div class="hd"><h3>Round control</h3></div>
+              <button class="btn primary lg block" id="open" type="button"><span data-ic="play" data-cls="sm"></span>Open buzzers (new round)</button>
+              <div class="row" style="margin-top:10px;flex-wrap:nowrap"><button class="btn danger block" id="lock" type="button"><span data-ic="lock" data-cls="sm"></span>Lock</button><button class="btn block" id="reset" type="button">Clear round</button></div>
+              <button class="btn gold block" id="award" type="button" style="margin-top:10px" disabled><span data-ic="star" data-cls="sm"></span><span id="awardTxt">Award a point to the first school</span></button>
+              <div style="margin-top:14px">
+                <label class="switch"><span>Lock after the first buzz</span><input type="checkbox" id="lockFirst"><i class="tg"></i></label>
+                <label class="switch"><span>Sound on first buzz</span><input type="checkbox" id="sound" checked><i class="tg"></i></label>
+              </div>
+            </div>
+            <div class="card"><div class="hd"><h3>Teams and scores</h3><span class="grow"></span><button class="btn sm" id="showDisplay" type="button"><span data-ic="screen" data-cls="sm"></span>Display</button></div><div id="miniTeams"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCOREBOARD -->
+      <section class="view hidden" id="v-board">
+        <div class="card"><div class="hd"><h3>Standings</h3><span class="grow"></span><button class="btn sm danger" id="resetScores" type="button">Reset all scores</button></div><ul class="lb" id="boardLb"></ul></div>
+      </section>
+
+      <!-- SCHOOLS & TEAMS -->
+      <section class="view hidden" id="v-teams">
+        <div class="card"><div class="hd"><h3>Teams</h3><span class="pill" id="teamSummary"></span></div><div class="teams" id="teams"></div></div>
+        <div class="card" id="setupCard">
+          <div class="hd"><h3>Register schools</h3></div>
+          <p class="muted" style="margin-bottom:6px">Add each school with its logo (up to 8 schools, 3 students each). Changes apply when you press <strong>Save setup</strong>. Removing a school removes its students.</p>
+          <div id="setupRows"></div>
+          <div class="row" style="margin-top:14px">
+            <button class="btn" id="addSchool" type="button"><span data-ic="plus" data-cls="sm"></span>Add school</button>
+            <button class="btn primary" id="saveSetup" type="button"><span data-ic="check" data-cls="sm"></span>Save setup</button>
+            <span class="msg" id="setupMsg" role="status" style="margin:0"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ROUND HISTORY -->
+      <section class="view hidden" id="v-history">
+        <div class="card">
+          <div class="hd"><h3>Rounds played</h3><span class="grow"></span><button class="btn sm" id="exportCsv" type="button"><span data-ic="down" data-cls="sm"></span>Export CSV</button><button class="btn sm danger" id="clearHist" type="button">Clear history</button></div>
+          <div class="tablewrap"><table class="table"><thead><tr><th>Round</th><th>First to buzz</th><th>Student</th><th>Time</th><th>Others</th><th>Point</th></tr></thead><tbody id="histBody"></tbody></table></div>
+          <div class="empty hidden" id="histEmpty">No rounds recorded yet. Rounds appear here once a school buzzes.</div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="view hidden" id="v-settings">
+        <div class="grid2">
+          <div class="stack">
+            <div class="card"><div class="hd"><h3>Competition icon</h3></div>
+              <p class="muted" style="margin-bottom:14px">Shown on the host screen, the big display and every contestant's phone.</p>
+              <div class="row"><div id="compPreview"></div><button class="btn sm" id="compUpload" type="button"><span data-ic="upload" data-cls="sm"></span>Upload icon</button><button class="btn sm danger" id="compRemove" type="button">Remove icon</button></div>
+              <div class="msg" id="compMsg" role="status"></div>
+            </div>
+            <div class="card"><div class="hd"><h3>Session</h3></div>
+              <p class="muted" style="margin-bottom:14px">Signing out leaves this room. Contestants in it can keep buzzing until the room expires, but you will need a new room to run another competition.</p>
+              <button class="btn danger" id="signOut2" type="button"><span data-ic="exit" data-cls="sm"></span>Sign out and start a new room</button>
+            </div>
+          </div>
+          <div class="card"><div class="hd"><h3>Host password</h3></div>
+            <p class="muted">To protect the host console, open your Render dashboard, go to <strong>Environment</strong>, add a variable named <strong>HOST_PASSWORD</strong> with the password you want, and save. The app restarts and asks for it before anyone can host. Contestants never need it.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- HELP -->
+      <section class="view hidden" id="v-help">
+        <div class="card"><div class="hd"><h3>Running a round</h3></div>
+          <ol style="margin:0;padding-left:20px;line-height:1.9;font-weight:600">
+            <li>Open <strong>Schools &amp; Teams</strong>, add each school with its logo and press <strong>Save setup</strong>.</li>
+            <li>Show the room code (or open the <strong>Display Screen</strong>) so each student can join from their phone.</li>
+            <li>Ask the question, then press <strong>Open buzzers</strong> in the Live Console.</li>
+            <li>The first student to buzz counts for their school. Their name and logo appear here and on the display.</li>
+            <li>Press <strong>Award a point</strong>, then <strong>Open buzzers</strong> again for the next question.</li>
+          </ol>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- DISPLAY (projector) SCREEN -->
+  <div class="display stage hidden" id="display">
+    <button class="btn ghost-w exit" id="exitDisplay" type="button">Exit display</button>
+    <div class="dtop">
+      <img class="c" src="/pic-logo.png" alt="">
+      <div><div class="a">PIC Competition Software</div><div class="b">Penny International College &middot; Inter-School Competition</div></div>
+      <div class="grow"></div>
+      <div class="comp" id="dComp">Competition icon</div>
+      <div class="join"><small>Room code</small><b id="dCode">----</b></div>
+    </div>
+    <div class="dmid" id="dMid"></div>
+    <div class="strip" id="dStrip"></div>
+  </div>
 
   <input type="file" id="compFile" accept="image/*" hidden>
 
   <script src="/common.js"></script>
   <script>
+    mountSprite(); applyIcons();
     const $ = (id) => document.getElementById(id);
-    const CFG_KEY = 'pic_host_config_v1';
-    const SESSION_KEY = 'pic_host_session_v1';
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const logoHTML = (code, id, name, v, size) => logoNode(code, id, name, v, size).outerHTML;
+    const CFG_KEY = 'pic_host_config_v1', SESSION_KEY = 'pic_host_session_v1', HIST_KEY = 'pic_history_v1';
     const MAX_SCHOOLS = 8;
     const newId = () => 's' + Math.random().toString(36).slice(2, 8);
+    const ordinal = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
 
     // ---------- local setup (kept in this browser so it survives a server restart) ----------
     function loadConfig() {
       try {
         const c = JSON.parse(safeGet(CFG_KEY));
-        if (c && Array.isArray(c.schools)) {
-          return {
-            schools: c.schools.slice(0, MAX_SCHOOLS).map((s) => ({ id: s.id, name: s.name || '', logo: s.logo || null })),
-            comp: c.comp || null,
-          };
-        }
+        if (c && Array.isArray(c.schools)) return { schools: c.schools.slice(0, MAX_SCHOOLS).map((s) => ({ id: s.id, name: s.name || '', logo: s.logo || null })), comp: c.comp || null };
       } catch {}
       return { schools: Array.from({ length: 5 }, () => ({ id: newId(), name: '', logo: null })), comp: null };
     }
     let config = loadConfig();
-    function saveConfig() {
-      if (!safeSet(CFG_KEY, JSON.stringify(config))) setMsg('This browser could not store the setup (storage full).', 'err');
-    }
-    function setMsg(text, kind) {
-      const m = $('setupMsg');
-      m.textContent = text || '';
-      m.className = 'msg' + (kind ? ' ' + kind : '');
-    }
+    function saveConfig() { if (!safeSet(CFG_KEY, JSON.stringify(config))) setMsg('This browser could not store the setup (storage full).', 'err'); }
+    function setMsg(text, kind) { const m = $('setupMsg'); m.textContent = text || ''; m.className = 'msg' + (kind ? ' ' + kind : ''); m.style.margin = '0'; }
+
+    // ---------- round history (kept in this browser) ----------
+    function loadHist() { try { const h = JSON.parse(safeGet(HIST_KEY)); if (h && Array.isArray(h.items)) return h; } catch {} return { round: 0, items: [] }; }
+    let hist = loadHist();
+    const saveHist = () => safeSet(HIST_KEY, JSON.stringify(hist));
 
     // ---------- connection ----------
     let saved = null;
     try { saved = JSON.parse(safeGet(SESSION_KEY)); } catch {}
-    let state = null, synced = false, pushed = {}, lastFirstKey = null, audioCtx = null, setupOpened = false;
+    let pendingOpen = false, state = null, synced = false, pushed = {}, lastFirstKey = null, audioCtx = null, needPw = false, pw = null, prevPhase = null, openedLocal = null;
 
     const sock = createSocket({
-      onStatus(ok) {
-        $('conn').textContent = ok ? 'Connected' : 'Reconnecting';
-        $('conn').className = 'pill ' + (ok ? 'open' : 'off');
-      },
-      onOpen() {
-        synced = false;
-        if (saved && saved.code && saved.token) sock.send({ t: 'host_resume', code: saved.code, token: saved.token });
-        else sock.send({ t: 'host_create' });
-      },
+      onStatus(ok) { $('conn').textContent = ok ? 'Connected' : 'Reconnecting'; $('conn').className = 'pill ' + (ok ? 'good' : 'off'); },
+      onOpen() { synced = false; start(); },
       onMessage(m) {
         if (m.t === 'host_fail') {
-          saved = null; safeDel(SESSION_KEY); pushed = {}; synced = false;
-          sock.send({ t: 'host_create' });
+          if (m.reason === 'password') { pw = null; showLogin('That password is not correct.'); return; }
+          saved = null; safeDel(SESSION_KEY); pushed = {}; synced = false; start();
         } else if (m.t === 'host_ok') {
           saved = { code: m.code, token: m.token };
           safeSet(SESSION_KEY, JSON.stringify(saved));
-          $('code').textContent = m.code;
+          $('login').classList.add('hidden');
           $('joinUrl').value = location.origin + '/play?code=' + m.code;
         } else if (m.t === 'state') {
           state = m;
           if (!synced) {
             synced = true;
-            // A fresh or restarted server has no schools: restore them from this browser.
             const hasContent = config.schools.some((s) => s.name.trim()) || config.comp;
             if (m.schools.length === 0 && hasContent) { pushed = {}; pushConfig(true); }
           }
-          render(m);
+          render();
         }
       },
     });
+    function start() {
+      if (saved && saved.code && saved.token) return sock.send({ t: 'host_resume', code: saved.code, token: saved.token });
+      if (needPw && pw === null) return showLogin('');
+      sock.send({ t: 'host_create', password: pw });
+    }
+    function showLogin(err) {
+      $('login').classList.remove('hidden');
+      $('pwMsg').textContent = err || ''; $('pwMsg').className = 'msg' + (err ? ' err' : '');
+      setTimeout(() => $('pw').focus(), 50);
+    }
+    $('loginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      pw = $('pw').value; $('pwMsg').textContent = 'Checking...'; $('pwMsg').className = 'msg';
+      sock.send({ t: 'host_create', password: pw });
+    });
+    fetch('/api/config', { cache: 'no-store' }).then((r) => r.json()).then((c) => { needPw = !!c.hostPassword; if (needPw && !saved && pw === null) showLogin(''); }).catch(() => {});
 
     function pushConfig(force) {
       const schools = config.schools.filter((s) => s.name.trim());
       sock.send({ t: 'set_schools', schools: schools.map((s) => ({ id: s.id, name: s.name.trim() })) });
       for (const s of schools) {
-        if (force || (pushed[s.id] || null) !== (s.logo || null)) {
-          sock.send({ t: 'set_logo', id: s.id, data: s.logo || null });
-          pushed[s.id] = s.logo || null;
-        }
+        if (force || (pushed[s.id] || null) !== (s.logo || null)) { sock.send({ t: 'set_logo', id: s.id, data: s.logo || null }); pushed[s.id] = s.logo || null; }
       }
-      if (force || (pushed._comp || null) !== (config.comp || null)) {
-        sock.send({ t: 'set_logo', id: '_comp', data: config.comp || null });
-        pushed._comp = config.comp || null;
-      }
+      if (force || (pushed._comp || null) !== (config.comp || null)) { sock.send({ t: 'set_logo', id: '_comp', data: config.comp || null }); pushed._comp = config.comp || null; }
     }
 
     // ---------- sound ----------
@@ -200,104 +288,243 @@
         audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
         const o = audioCtx.createOscillator(), g = audioCtx.createGain();
         o.type = 'sine'; o.frequency.value = 880;
-        g.gain.setValueAtTime(0.3, audioCtx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
-        o.connect(g); g.connect(audioCtx.destination);
-        o.start(); o.stop(audioCtx.currentTime + 0.5);
+        g.gain.setValueAtTime(0.3, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+        o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 0.5);
       } catch {}
     }
 
+    // ---------- views ----------
+    const VIEWS = {
+      home: ['Home', () => new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + ' · Inter-School Competition'],
+      console: ['Live Console', () => 'Run the round, watch the buzzers and award points'],
+      board: ['Scoreboard', () => 'Standings of every school'],
+      teams: ['Schools & Teams', () => 'Register schools, logos and seats'],
+      history: ['Round History', () => 'Every round recorded on this device'],
+      settings: ['Settings', () => 'Sound, competition icon and session'],
+      help: ['Help & Guide', () => 'How to run a round'],
+    };
+    let view = 'home';
+    function go(v) {
+      if (!VIEWS[v]) v = 'home';
+      view = v;
+      for (const k of Object.keys(VIEWS)) $('v-' + k).classList.toggle('hidden', k !== v);
+      document.querySelectorAll('.nav[data-view]').forEach((n) => n.classList.toggle('active', n.dataset.view === v));
+      $('vTitle').textContent = VIEWS[v][0]; $('vSub').textContent = VIEWS[v][1]();
+      document.title = VIEWS[v][0] + ' | PIC Competition Software';
+      if (location.hash.slice(1) !== v) history.replaceState(null, '', '#' + v);
+      sizePodium(); window.scrollTo(0, 0);
+    }
+    document.querySelectorAll('.nav[data-view]').forEach((n) => (n.onclick = () => go(n.dataset.view)));
+    window.addEventListener('hashchange', () => go(location.hash.slice(1)));
+
+    // ---------- helpers on state ----------
+    const schoolsSorted = (s) => [...s.schools].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+    const fmtS = (ms) => (ms / 1000).toFixed(2);
+
+    // record the current round in the history (client side)
+    function recordRound(s) {
+      if (!s.buzzes.length) return;
+      let item = hist.items.find((i) => i.round === hist.round);
+      if (!item) { item = { round: hist.round, at: Date.now(), awarded: null }; hist.items.push(item); }
+      item.results = s.buzzes.map((b) => ({ school: b.school, student: b.student, ms: b.sinceOpen, behind: b.behindFirst }));
+      saveHist();
+    }
+
     // ---------- rendering ----------
-    function render(s) {
-      $('code').textContent = s.code;
-      $('phase').textContent = s.phase === 'open' ? 'Buzzers open' : 'Locked';
-      $('phase').className = 'pill ' + s.phase;
-      $('lockFirst').checked = s.lockOnFirst;
+    function render() {
+      const s = state; if (!s) return;
+      const open = s.phase === 'open';
+      if (prevPhase !== 'open' && open && s.buzzes.length === 0) openedLocal = performance.now();
+      prevPhase = s.phase;
+      if (pendingOpen && s.phase === 'open' && !s.buzzes.length) pendingOpen = false;
+      if (!pendingOpen) recordRound(s);
+
       $('noSchools').classList.toggle('hidden', s.schools.length > 0);
-      if (s.schools.length === 0 && !setupOpened) { $('setup').open = true; setupOpened = true; }
-
-      // Buzz order
-      const box = $('firstBox'), list = $('order');
-      box.replaceChildren(); list.replaceChildren();
-      if (!s.buzzes.length) {
-        box.append(el('div', { class: 'waiting' }, s.phase === 'open' ? 'Buzzers are open. Waiting for the first buzz.' : 'Buzzers are locked. Press "Open buzzers" to start a round.'));
-      } else {
-        const f = s.buzzes[0];
-        box.append(el('div', { class: 'first-card' },
-          logoNode(s.code, f.schoolId, f.school, f.logoV, 'xl'),
-          el('div', {},
-            el('div', { class: 'first-label' }, 'First to buzz'),
-            el('div', { class: 'first-school' }, f.school),
-            el('div', { class: 'first-student' }, f.student),
-            el('div', { class: 'first-time' }, (f.sinceOpen / 1000).toFixed(2) + ' s after the buzzers opened'))));
-        for (const b of s.buzzes.slice(1)) {
-          list.append(el('li', {},
-            el('span', { class: 'pos' }, '#' + b.pos),
-            logoNode(s.code, b.schoolId, b.school, b.logoV, 'sm'),
-            el('div', { class: 'who' }, el('strong', {}, b.school), el('span', {}, b.student)),
-            el('span', { class: 'tm' }, '+' + b.behindFirst + ' ms')));
-        }
-      }
+      $('lockFirst').checked = s.lockOnFirst;
+      $('histCount').textContent = hist.items.length;
+      const online = s.schools.reduce((n, t) => n + t.students.filter((p) => p.connected).length, 0);
+      const seated = s.schools.reduce((n, t) => n + t.students.length, 0);
+      const cap = s.schools.length * s.teamSize;
       const first = s.buzzes[0];
-      const key = first ? first.schoolId + '|' + first.student + '|' + first.sinceOpen : null;
-      if (key && key !== lastFirstKey) { beep(); if (navigator.vibrate) navigator.vibrate(150); }
-      lastFirstKey = key;
 
-      // Teams
+      for (const id of ['beacon1', 'beacon2']) {
+        const b = $(id); b.className = 'beacon ' + (open ? 'open' : 'locked');
+        b.querySelector('b').textContent = open ? 'Buzzers open' : 'Locked';
+        const sm = b.querySelector('small'); if (sm) sm.textContent = open ? (first ? first.school + ' buzzed' : 'Waiting for the first buzz') : 'Press Open to start a round';
+      }
+      $('code').textContent = s.code; $('online').textContent = online + ' / ' + seated; $('roundNo').textContent = hist.round;
+      $('kbds').replaceChildren(...[...s.code].map((c) => el('span', { class: 'kbd' }, c)));
+      $('joinUrl').value = location.origin + '/play?code=' + s.code;
+
+      // ---- Home ----
+      const lead = schoolsSorted(s)[0];
+      const lastItem = hist.items[hist.items.length - 1];
+      buildHero(s, lead, lastItem, seated, cap);
+      $('stats').innerHTML = [
+        ['home', s.schools.length + '<small>/ ' + MAX_SCHOOLS + '</small>', 'Schools registered', ''],
+        ['people', online + '<small>/ ' + seated + '</small>', 'Students online', ''],
+        ['watch', String(hist.items.length), 'Rounds played', ''],
+        ['trophy', lead ? lead.score + '<small>pts</small>' : '0', lead && lead.score ? 'Leading: ' + esc(lead.name) : 'No scores yet', 'gold'],
+      ].map(([i, b, l, c]) => `<div class="card stat"><div class="ico ${c}">${ic(i, 'lg')}</div><div><b>${b}</b><span>${l}</span></div></div>`).join('');
+      $('lbRound').textContent = hist.items.length ? 'After round ' + hist.items[hist.items.length - 1].round : 'Season start';
+      fillLb($('homeLb'), s);
+      $('homeRecent').innerHTML = hist.items.length
+        ? hist.items.slice(-4).reverse().map((i) => `<div class="row" style="padding:10px 0;border-top:1px solid var(--line);flex-wrap:nowrap"><span class="eyebrow" style="width:74px">Round ${i.round}</span><div class="grow" style="font-weight:800;font-size:14px;line-height:1.25">${esc(i.results[0].school)}<div class="muted" style="font-weight:600;font-size:12.5px">${esc(i.results[0].student)}</div></div><span class="tm">${fmtS(i.results[0].ms)} s</span></div>`).join('')
+        : '<div class="empty">No rounds yet.</div>';
+
+      // ---- Console ----
+      $('podRound').textContent = 'Round ' + (hist.round || 1);
+      $('podFirst').innerHTML = first ? ic('star', 'sm') + ' First buzz <b style="color:#ffe08a;margin-left:4px">' + fmtS(first.sinceOpen) + ' s</b>' : (open ? 'Waiting for the first buzz' : 'Locked');
+      buildPodium(s);
+      const ord = $('order'); ord.replaceChildren();
+      const buzzedIds = new Set(s.buzzes.map((b) => b.schoolId));
+      for (const b of s.buzzes) {
+        ord.insertAdjacentHTML('beforeend', `<li><span class="rank ${b.pos === 1 ? 'gold' : ''}">${b.pos}</span>${logoHTML(s.code, b.schoolId, b.school, b.logoV, 'md')}<div class="who"><b>${esc(b.school)}</b><span>${esc(b.student)}</span></div><span class="tm">${b.pos === 1 ? fmtS(b.sinceOpen) + ' s' : '+' + b.behindFirst + ' ms'}</span></li>`);
+      }
+      for (const t of s.schools) if (!buzzedIds.has(t.id)) ord.insertAdjacentHTML('beforeend', `<li class="dim"><span class="rank">-</span>${logoHTML(s.code, t.id, t.name, t.logoV, 'md')}<div class="who"><b>${esc(t.name)}</b><span>Has not buzzed</span></div><span class="tm">--</span></li>`);
+      if (!s.schools.length) ord.innerHTML = '<div class="empty">Register schools to begin.</div>';
+      const curItem = hist.items.find((i) => i.round === hist.round);
+      const awarded = curItem && curItem.awarded;
+      $('award').disabled = !first || !!awarded;
+      $('awardTxt').textContent = awarded ? 'Point awarded to ' + awarded : first ? 'Award a point to ' + first.school : 'Award a point to the first school';
+      $('miniTeams').innerHTML = s.schools.map((t) => `<div class="row" style="padding:10px 0;border-top:1px solid var(--line);flex-wrap:nowrap">${logoHTML(s.code, t.id, t.name, t.logoV, 'sm')}<div class="grow" style="font-weight:800;font-size:13.5px;line-height:1.25">${esc(t.name)}<div class="row" style="gap:5px;margin-top:5px">${Array.from({ length: s.teamSize }, (_, k) => `<span class="dot ${t.students[k] ? (t.students[k].connected ? '' : 'off') : 'none'}"></span>`).join('')}</div></div><button class="btn sm icon" data-act="score" data-id="${t.id}" data-d="-1" aria-label="Subtract a point"><svg class="ic sm"><use href="#i-minus"/></svg></button><b style="font-family:var(--display);min-width:30px;text-align:center">${t.score}</b><button class="btn sm icon primary" data-act="score" data-id="${t.id}" data-d="1" aria-label="Add a point"><svg class="ic sm"><use href="#i-plus"/></svg></button></div>`).join('') || '<div class="empty">No teams yet.</div>';
+
+      // ---- Board ----
+      fillLb($('boardLb'), s);
+
+      // ---- Teams ----
+      $('teamSummary').textContent = seated + ' of ' + cap + ' seats filled';
       const teams = $('teams'); teams.replaceChildren();
       for (const t of s.schools) {
         const seats = [];
         for (let i = 0; i < s.teamSize; i++) {
           const p = t.students[i];
           seats.push(p
-            ? el('li', {},
-                el('span', { class: 'dot' + (p.connected ? '' : ' off'), title: p.connected ? 'Online' : 'Offline' }),
-                el('span', { class: 'nm' }, p.name),
-                el('button', { class: 'btn btn-sm btn-ghost', type: 'button', onclick: () => { if (confirm('Remove ' + p.name + ' from ' + t.name + '?')) sock.send({ t: 'kick', playerId: p.id }); } }, 'Remove'))
+            ? el('li', {}, el('span', { class: 'dot' + (p.connected ? '' : ' off'), title: p.connected ? 'Online' : 'Offline' }), el('span', { class: 'nm' }, p.name),
+                el('button', { class: 'btn sm', type: 'button', onclick: () => { if (confirm('Remove ' + p.name + ' from ' + t.name + '?')) sock.send({ t: 'kick', playerId: p.id }); } }, 'Remove'))
             : el('li', {}, el('span', { class: 'dot none' }), el('span', { class: 'nm open-seat' }, 'Open seat')));
         }
         teams.append(el('article', { class: 'team' + (t.pos ? ' buzzed' : '') },
-          el('div', { class: 'team-head' },
-            logoNode(s.code, t.id, t.name, t.logoV, 'md'),
-            el('div', { class: 'team-name' }, t.name),
-            t.pos ? el('span', { class: 'badge' }, 'Buzz #' + t.pos) : null),
-          el('div', { class: 'score-row' },
-            el('span', { class: 'lbl' }, 'Score'),
-            el('button', { class: 'btn btn-sm', type: 'button', 'aria-label': 'Subtract a point from ' + t.name, onclick: () => sock.send({ t: 'score', schoolId: t.id, delta: -1 }) }, '-'),
+          el('div', { class: 'team-head' }, logoNode(s.code, t.id, t.name, t.logoV, 'md'), el('div', { class: 'team-name' }, t.name), t.pos ? el('span', { class: 'pill' }, 'Buzz #' + t.pos) : null),
+          el('div', { class: 'score-row' }, el('span', { class: 'lbl' }, 'Score'),
+            el('button', { class: 'btn sm icon', type: 'button', 'aria-label': 'Subtract a point from ' + t.name, onclick: () => sock.send({ t: 'score', schoolId: t.id, delta: -1 }) }, '-'),
             el('span', { class: 'score' }, String(t.score)),
-            el('button', { class: 'btn btn-sm btn-primary', type: 'button', 'aria-label': 'Add a point to ' + t.name, onclick: () => sock.send({ t: 'score', schoolId: t.id, delta: 1 }) }, '+')),
+            el('button', { class: 'btn sm icon primary', type: 'button', 'aria-label': 'Add a point to ' + t.name, onclick: () => sock.send({ t: 'score', schoolId: t.id, delta: 1 }) }, '+')),
           el('ul', { class: 'students' }, ...seats)));
       }
-      if (!s.schools.length) teams.append(el('div', { class: 'muted' }, 'No teams yet.'));
+      if (!s.schools.length) teams.append(el('div', { class: 'empty' }, 'No teams yet. Register your schools below.'));
+
+      // ---- History ----
+      renderHistory();
+      renderComp(s);
+      renderDisplay(s);
+
+      const key = first ? first.schoolId + '|' + first.student + '|' + first.sinceOpen : null;
+      if (key && key !== lastFirstKey) { beep(); if (navigator.vibrate) navigator.vibrate(150); }
+      lastFirstKey = key;
     }
 
-    // ---------- header competition icon ----------
+    function fillLb(ul, s) {
+      const list = schoolsSorted(s), max = Math.max(1, ...list.map((t) => t.score));
+      ul.innerHTML = list.map((t, i) => `<li class="${i === 0 && t.score > 0 ? 'top' : ''}"><span class="rank ${i === 0 && t.score > 0 ? 'gold' : ''}">${i + 1}</span>${logoHTML(s.code, t.id, t.name, t.logoV, 'md')}<div class="who"><b>${esc(t.name)}</b><span>${t.students.length} of ${s.teamSize} students joined</span></div><div class="bar"><i style="width:${Math.max(3, t.score / max * 100)}%"></i></div><div class="pts">${t.score}<small>pts</small></div></li>`).join('') || '<div class="empty">No schools yet.</div>';
+    }
+
+    // ---------- hero carousel ----------
+    let heroIdx = 0, heroTimer = null, heroSlides = [];
+    $('hero').insertAdjacentHTML('afterbegin', stageLayers(SCENE_DEFAULT));
+    function buildHero(s, lead, lastItem, seated, cap) {
+      const slides = [];
+      slides.push(['Ready when you are', s.schools.length ? s.schools.length + ' schools. ' + seated + ' students. One buzzer.' : 'Welcome to the arena.', s.schools.length ? 'Everyone signed in? Open the buzzers when the quiz master finishes the question.' : 'Register the competing schools to get started.']);
+      if (lead && lead.score) slides.push(['Current leader', lead.name + ' leads with ' + lead.score + ' pts.', 'Standings update live as you award points.']);
+      if (lastItem) slides.push(['Last round', lastItem.results[0].school + ' buzzed first in ' + fmtS(lastItem.results[0].ms) + ' s.', lastItem.results[0].student + ' hit the buzzer for their school in round ' + lastItem.round + '.']);
+      const sig = JSON.stringify(slides);
+      if (sig === buildHero.sig) return;
+      buildHero.sig = sig; heroSlides = slides; heroIdx = Math.min(heroIdx, slides.length - 1);
+      $('slides').innerHTML = slides.map(([e, t, p], i) => `<div class="slide ${i === heroIdx ? 'on' : ''}"><div class="eyebrow">${esc(e)}</div><h2>${esc(t)}</h2><p>${esc(p)}</p><div class="acts"><button class="btn white" data-go="console" type="button">${ic('play', 'sm')}Start live round</button><button class="btn ghost-w" data-act="display" type="button">${ic('screen', 'sm')}Open display screen</button></div></div>`).join('');
+      $('hDots').innerHTML = slides.map((_, i) => `<i class="${i === heroIdx ? 'on' : ''}" data-i="${i}"></i>`).join('');
+      const picks = s.schools.slice(0, 4);
+      const pos = [[-6, 26, -8, 76], [356, 6, 7, 70], [362, 196, -5, 74], [-14, 196, 9, 66]];
+      $('heroArt').innerHTML = buzz3d(1, 'BUZZ') + picks.map((t, i) => `<div class="float-logo" style="width:${pos[i][3]}px;height:${pos[i][3]}px;left:${pos[i][0]}px;top:${pos[i][1]}px;transform:rotate(${pos[i][2]}deg)">${logoHTML(s.code, t.id, t.name, t.logoV, 'md')}</div>`).join('');
+      clearInterval(heroTimer); heroTimer = setInterval(() => heroTo(heroIdx + 1), 6500);
+    }
+    function heroTo(i) {
+      const n = heroSlides.length; if (!n) return;
+      heroIdx = (i + n) % n;
+      [...$('slides').children].forEach((el2, k) => el2.classList.toggle('on', k === heroIdx));
+      [...$('hDots').children].forEach((el2, k) => el2.classList.toggle('on', k === heroIdx));
+    }
+    $('hPrev').onclick = () => { heroTo(heroIdx - 1); clearInterval(heroTimer); heroTimer = setInterval(() => heroTo(heroIdx + 1), 6500); };
+    $('hNext').onclick = () => { heroTo(heroIdx + 1); clearInterval(heroTimer); heroTimer = setInterval(() => heroTo(heroIdx + 1), 6500); };
+    $('hDots').onclick = (e) => { const i = e.target.dataset && e.target.dataset.i; if (i !== undefined) heroTo(+i); };
+
+    // ---------- 3D podium ----------
+    function cuboid({ x, w, h, d, label, gold }) {
+      return `<div class="cub ${gold ? 'gold' : ''}" style="left:${x}px;top:${330 - h}px;width:${w}px;height:${h}px">
+        <div class="f front" style="width:${w}px;height:${h}px;transform:translateZ(${d / 2}px)"><span class="num" style="font-size:${gold ? 54 : 44}px">${label}</span></div>
+        <div class="f right" style="width:${d}px;height:${h}px;left:${(w - d) / 2}px;transform:rotateY(90deg) translateZ(${w / 2}px)"></div>
+        <div class="f left" style="width:${d}px;height:${h}px;left:${(w - d) / 2}px;transform:rotateY(-90deg) translateZ(${w / 2}px)"></div>
+        <div class="f top" style="width:${w}px;height:${d}px;top:${(h - d) / 2}px;transform:rotateX(90deg) translateZ(${h / 2}px)"></div></div>`;
+    }
+    function buildPodium(s) {
+      const spots = [{ rank: 2, x: 70, w: 170, h: 105 }, { rank: 1, x: 265, w: 170, h: 150, gold: true }, { rank: 3, x: 460, w: 170, h: 75 }];
+      let blocks = '', tags = '';
+      for (const sp of spots) {
+        const b = s.buzzes[sp.rank - 1];
+        blocks += cuboid({ x: sp.x, w: sp.w, h: sp.h, d: 120, label: sp.rank, gold: sp.gold });
+        const cx = sp.x + sp.w / 2 + (sp.rank === 1 ? 6 : sp.rank === 2 ? 20 : -6);
+        tags += b
+          ? `<div class="pod-tag ${sp.rank === 1 ? 'first' : ''}" style="left:${cx}px;bottom:${60 + sp.h + 26}px">${logoHTML(s.code, b.schoolId, b.school, b.logoV, 'lg')}<div class="lab"><b>${esc(b.school)}</b><span>${esc(b.student)}</span></div></div>`
+          : `<div class="pod-tag empty" style="left:${cx}px;bottom:${60 + sp.h + 26}px"><div class="ghost"></div><div class="lab"><b>${sp.rank === 1 ? 'First buzz' : ordinal(sp.rank)}</b><span>Open</span></div></div>`;
+      }
+      $('podInner').innerHTML = `<div class="scene3d"><div class="pod">${blocks}</div></div>${tags}`;
+    }
+    function sizePodium() { const w = $('podWrap').clientWidth; if (w) $('podWrap').style.setProperty('--k', Math.min(1, (w - 4) / 700).toFixed(3)); }
+    new ResizeObserver(sizePodium).observe($('podWrap'));
+
+    // ---------- round clock ----------
+    setInterval(() => {
+      if (!state) return;
+      let ms = 0;
+      if (state.buzzes.length) ms = state.buzzes[0].sinceOpen;
+      else if (state.phase === 'open' && openedLocal) ms = performance.now() - openedLocal;
+      const m = Math.floor(ms / 60000), sec = Math.floor(ms / 1000) % 60, cs = Math.floor(ms / 10) % 100;
+      $('clock').textContent = String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0') + '.' + String(cs).padStart(2, '0');
+    }, 50);
+
+    // ---------- history ----------
+    function renderHistory() {
+      const body = $('histBody');
+      body.innerHTML = [...hist.items].reverse().map((i) => {
+        const f = i.results[0], rest = i.results.slice(1).map((r) => esc(r.school) + ' +' + r.behind + ' ms').join(' · ') || '--';
+        return `<tr><td class="rn">Round ${i.round}</td><td><b>${esc(f.school)}</b></td><td>${esc(f.student)}</td><td><span class="tm">${fmtS(f.ms)} s</span></td><td class="muted" style="font-size:12.5px;max-width:300px">${rest}</td><td>${i.awarded ? '<span class="pill good">' + esc(i.awarded) + '</span>' : '<span class="muted">--</span>'}</td></tr>`;
+      }).join('');
+      $('histEmpty').classList.toggle('hidden', hist.items.length > 0);
+    }
+    $('exportCsv').onclick = () => {
+      const rows = [['Round', 'Position', 'School', 'Student', 'Seconds after open', 'Behind first (ms)', 'Point awarded to']];
+      for (const i of hist.items) i.results.forEach((r, k) => rows.push([i.round, k + 1, r.school, r.student, (r.ms / 1000).toFixed(3), r.behind, k === 0 ? (i.awarded || '') : '']));
+      const csv = rows.map((r) => r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\r\n');
+      const a = el('a', { href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })), download: 'pic-rounds.csv' });
+      document.body.append(a); a.click(); a.remove();
+    };
+    $('clearHist').onclick = () => { if (confirm('Clear the round history on this device?')) { hist = { round: hist.round, items: [] }; saveHist(); render(); } };
+
+    // ---------- competition icon ----------
     function renderComp() {
       const slot = $('compSlot'), prev = $('compPreview');
       slot.replaceChildren(); prev.replaceChildren();
-      if (config.comp) {
-        slot.classList.add('filled');
-        slot.append(el('img', { src: config.comp, alt: 'Competition icon' }));
-        prev.append(el('img', { class: 'logo md', src: config.comp, alt: 'Competition icon preview' }));
-      } else {
-        slot.classList.remove('filled');
-        slot.append('Competition icon');
-        prev.append(el('div', { class: 'logo md mono' }, '?'));
-      }
+      if (config.comp) { slot.classList.add('filled'); slot.append(el('img', { src: config.comp, alt: 'Competition icon' })); prev.append(el('img', { class: 'logo md', src: config.comp, alt: 'Competition icon preview' })); }
+      else { slot.classList.remove('filled'); slot.append('Add icon'); prev.append(el('div', { class: 'logo md mono' }, '?')); }
       $('compRemove').disabled = !config.comp;
     }
     async function setComp(file) {
-      try {
-        config.comp = await fileToLogo(file, 256);
-        saveConfig(); renderComp();
-        if (synced) pushConfig(false);
-        setMsg('Competition icon updated.', 'good');
-      } catch (e) { setMsg(e.message, 'err'); }
+      try { config.comp = await fileToLogo(file, 256); saveConfig(); renderComp(); if (synced) pushConfig(false); $('compMsg').textContent = 'Competition icon updated.'; $('compMsg').className = 'msg good'; if (state) renderDisplay(state); }
+      catch (e) { $('compMsg').textContent = e.message; $('compMsg').className = 'msg err'; }
     }
     $('compSlot').onclick = () => $('compFile').click();
     $('compUpload').onclick = () => $('compFile').click();
     $('compFile').onchange = (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) setComp(f); };
-    $('compRemove').onclick = () => { config.comp = null; saveConfig(); renderComp(); if (synced) pushConfig(false); };
+    $('compRemove').onclick = () => { config.comp = null; saveConfig(); renderComp(); if (synced) pushConfig(false); if (state) renderDisplay(state); };
 
     // ---------- setup panel ----------
     function renderSetup() {
@@ -305,33 +532,23 @@
       config.schools.forEach((s, i) => {
         const file = el('input', { type: 'file', accept: 'image/*', hidden: true });
         file.addEventListener('change', async () => {
-          const f = file.files[0]; file.value = '';
-          if (!f) return;
-          try { s.logo = await fileToLogo(f, 256); saveConfig(); renderSetup(); setMsg('Logo added. Press Save setup to apply.', ''); }
-          catch (e) { setMsg(e.message, 'err'); }
+          const f = file.files[0]; file.value = ''; if (!f) return;
+          try { s.logo = await fileToLogo(f, 256); saveConfig(); renderSetup(); setMsg('Logo added. Press Save setup to apply.', ''); } catch (e) { setMsg(e.message, 'err'); }
         });
-        const nameInput = el('input', { type: 'text', maxlength: '40', placeholder: 'School ' + (i + 1) + ' name', 'aria-label': 'School ' + (i + 1) + ' name', value: s.name });
+        const nameInput = el('input', { type: 'text', class: 'input', maxlength: '40', placeholder: 'School ' + (i + 1) + ' name', 'aria-label': 'School ' + (i + 1) + ' name', value: s.name });
         nameInput.addEventListener('input', () => { s.name = nameInput.value; saveConfig(); });
         const preview = s.logo ? el('img', { class: 'logo md', src: s.logo, alt: 'Logo preview' }) : el('div', { class: 'logo md mono' }, initials(s.name) === '?' ? String(i + 1) : initials(s.name));
-        box.append(el('div', { class: 'setup-row' },
-          preview,
-          nameInput,
-          el('div', { class: 'actions' },
-            file,
-            el('button', { class: 'btn btn-sm', type: 'button', onclick: () => file.click() }, s.logo ? 'Change logo' : 'Upload logo'),
-            s.logo ? el('button', { class: 'btn btn-sm btn-ghost', type: 'button', onclick: () => { s.logo = null; saveConfig(); renderSetup(); } }, 'Remove logo') : null,
-            el('button', { class: 'btn btn-sm btn-danger', type: 'button', onclick: () => {
-              if (s.name.trim() && !confirm('Remove ' + s.name.trim() + '? Its students will be removed when you save.')) return;
-              config.schools.splice(i, 1); saveConfig(); renderSetup(); setMsg('School removed. Press Save setup to apply.', '');
-            } }, 'Delete school'))));
+        box.append(el('div', { class: 'setup-row' }, preview, nameInput, el('div', { class: 'actions' }, file,
+          el('button', { class: 'btn sm', type: 'button', onclick: () => file.click() }, s.logo ? 'Change logo' : 'Upload logo'),
+          s.logo ? el('button', { class: 'btn sm', type: 'button', onclick: () => { s.logo = null; saveConfig(); renderSetup(); } }, 'Remove logo') : null,
+          el('button', { class: 'btn sm danger', type: 'button', onclick: () => {
+            if (s.name.trim() && !confirm('Remove ' + s.name.trim() + '? Its students will be removed when you save.')) return;
+            config.schools.splice(i, 1); saveConfig(); renderSetup(); setMsg('School removed. Press Save setup to apply.', '');
+          } }, 'Delete'))));
       });
       $('addSchool').disabled = config.schools.length >= MAX_SCHOOLS;
     }
-    $('addSchool').onclick = () => {
-      if (config.schools.length >= MAX_SCHOOLS) return;
-      config.schools.push({ id: newId(), name: '', logo: null });
-      saveConfig(); renderSetup();
-    };
+    $('addSchool').onclick = () => { if (config.schools.length >= MAX_SCHOOLS) return; config.schools.push({ id: newId(), name: '', logo: null }); saveConfig(); renderSetup(); };
     $('saveSetup').onclick = () => {
       const named = config.schools.filter((s) => s.name.trim());
       const names = named.map((s) => s.name.trim().toLowerCase());
@@ -344,21 +561,59 @@
     // ---------- round controls ----------
     $('open').onclick = () => {
       try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); audioCtx.resume(); } catch {}
+      hist.round += 1; saveHist();
+      pendingOpen = true; setTimeout(() => (pendingOpen = false), 3000);
       sock.send({ t: 'open' });
     };
     $('lock').onclick = () => sock.send({ t: 'lock' });
-    $('reset').onclick = () => sock.send({ t: 'reset' });
+    $('reset').onclick = () => { hist.items = hist.items.filter((i) => i.round !== hist.round); saveHist(); sock.send({ t: 'reset' }); };
     $('lockFirst').onchange = (e) => sock.send({ t: 'lock_on_first', value: e.target.checked });
+    $('award').onclick = () => {
+      const f = state && state.buzzes[0]; if (!f) return;
+      const item = hist.items.find((i) => i.round === hist.round); if (!item || item.awarded) return;
+      item.awarded = f.school; saveHist();
+      sock.send({ t: 'score', schoolId: f.schoolId, delta: 1 });
+    };
     $('resetScores').onclick = () => { if (confirm('Reset every school\'s score to 0?')) sock.send({ t: 'reset_scores' }); };
     $('copy').onclick = async () => {
-      try { await navigator.clipboard.writeText($('joinUrl').value); }
-      catch { $('joinUrl').select(); try { document.execCommand('copy'); } catch {} }
-      $('copy').textContent = 'Copied';
-      setTimeout(() => ($('copy').textContent = 'Copy link'), 1500);
+      try { await navigator.clipboard.writeText($('joinUrl').value); } catch { $('joinUrl').select(); try { document.execCommand('copy'); } catch {} }
+      $('copy').classList.add('primary'); setTimeout(() => $('copy').classList.remove('primary'), 1200);
     };
+    const signOut = () => { if (!confirm('Sign out and leave this room?')) return; safeDel(SESSION_KEY); location.href = '/'; };
+    $('signOut').onclick = signOut; $('signOut2').onclick = signOut;
+    document.addEventListener('click', (e) => {
+      const t = e.target.closest('[data-act],[data-go]'); if (!t) return;
+      if (t.dataset.go) return go(t.dataset.go);
+      if (t.dataset.act === 'score') sock.send({ t: 'score', schoolId: t.dataset.id, delta: +t.dataset.d });
+      if (t.dataset.act === 'display') openDisplay();
+    });
 
-    renderComp();
-    renderSetup();
+    // ---------- display (projector) screen ----------
+    function openDisplay() { $('display').classList.remove('hidden'); if (state) renderDisplay(state); try { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); } catch {} }
+    function closeDisplay() { $('display').classList.add('hidden'); try { if (document.fullscreenElement) document.exitFullscreen(); } catch {} }
+    $('navDisplay').onclick = openDisplay; $('showDisplay').onclick = openDisplay; $('exitDisplay').onclick = closeDisplay;
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('display').classList.contains('hidden')) closeDisplay(); });
+    $('display').insertAdjacentHTML('afterbegin', stageLayers({ orbs: [[4, 40, 150, 3], [92, 36, 190, 4]], rings: [[0, 18, 560]], sparks: [[20, 18], [30, 40, .8], [70, 22], [80, 44, .7], [12, 70], [88, 72, .8], [50, 10, .6]] }));
+    function renderDisplay(s) {
+      if ($('display').classList.contains('hidden')) return;
+      $('dCode').textContent = s.code;
+      const comp = $('dComp'); comp.replaceChildren();
+      if (config.comp) comp.append(el('img', { src: config.comp, alt: 'Competition icon' })); else comp.append('Competition icon');
+      const first = s.buzzes[0], open = s.phase === 'open';
+      const mid = $('dMid');
+      if (first) {
+        mid.innerHTML = `<div class="rnd">Round ${hist.round}</div><div class="halo">${logoHTML(s.code, first.schoolId, first.school, first.logoV, 'xl')}</div><div class="first">First to buzz</div><div class="school">${esc(first.school)}</div><div class="student">${esc(first.student)}</div><div class="time">${fmtS(first.sinceOpen)}<small>seconds after the buzzers opened</small></div>`;
+      } else {
+        mid.innerHTML = `<div class="rnd">Round ${hist.round || 1}</div><div class="wait">${open ? 'Buzzers are open' : 'Get ready'}<small>${open ? 'Waiting for the first school to buzz' : 'The quiz master will open the buzzers for the next question'}</small></div><div class="join" style="margin-top:4vh;text-align:center"><small>Join at ${esc(location.host)}/play</small><b>${esc(s.code)}</b></div>`;
+      }
+      const order = [...s.buzzes.map((b) => ({ id: b.schoolId, pos: b.pos, d: b.pos === 1 ? fmtS(b.sinceOpen) + ' s' : '+' + b.behindFirst + ' ms' })), ...schoolsSorted(s).filter((t) => !s.buzzes.some((b) => b.schoolId === t.id)).map((t) => ({ id: t.id, pos: null, d: 'No buzz' }))];
+      $('dStrip').innerHTML = order.map((o) => {
+        const t = s.schools.find((x) => x.id === o.id); if (!t) return '';
+        return `<div class="sc ${o.pos === 1 ? 'gold' : ''} ${o.pos ? '' : 'none'}">${logoHTML(s.code, t.id, t.name, t.logoV, 'md')}<div style="min-width:0"><div class="n">${esc(t.name)}</div><div class="d">${o.d}</div></div><div class="p">${t.score}<small>pts</small></div></div>`;
+      }).join('');
+    }
+
+    renderComp(); renderSetup(); go(location.hash.slice(1) || 'home');
   </script>
 </body>
 </html>

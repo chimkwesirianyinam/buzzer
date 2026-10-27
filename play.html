@@ -8,39 +8,30 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body class="play">
-  <header class="site-header">
-    <div class="hdr-inner">
-      <div class="brand">
-        <img class="brand-logo" src="/pic-logo.png" alt="Penny International College crest">
-        <div>
-          <div class="brand-title">PIC Competition Software</div>
-          <div class="brand-sub">Penny International College</div>
-        </div>
-      </div>
-      <div class="comp-slot filled hidden" id="compSlot"></div>
-    </div>
+  <header class="ptop">
+    <img class="c" src="/pic-logo.png" alt="Penny International College crest">
+    <div><div class="t">PIC Competition Software</div><div class="s">Penny International College</div></div>
+    <div class="comp-slot filled hidden" id="compSlot"></div>
   </header>
 
   <!-- Join screen -->
   <main class="play-wrap" id="joinView">
+    <div class="joinhero"><h1>Take your seat.</h1><p>Enter the room code, pick your school and add your name.</p></div>
     <form class="card" id="joinForm" novalidate>
-      <div class="card-title">Join the competition</div>
-
-      <label class="field-label" for="code" style="margin-top:0">1. Room code</label>
-      <input type="text" id="code" maxlength="4" autocapitalize="characters" autocomplete="off" spellcheck="false"
-             style="text-transform:uppercase;letter-spacing:.35em;text-align:center;font-family:var(--serif);font-size:1.7rem;font-weight:700" placeholder="ABCD">
+      <label class="label" for="code">1. Room code</label>
+      <input type="text" id="code" class="input codeinput" maxlength="4" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="ABCD">
       <div class="msg" id="codeMsg" role="status"></div>
 
       <div id="schoolStep" class="hidden">
-        <label class="field-label">2. Choose your school</label>
+        <label class="label">2. Choose your school</label>
         <div class="tiles" id="tiles"></div>
 
-        <label class="field-label" for="name">3. Your name</label>
-        <input type="text" id="name" maxlength="24" autocomplete="nickname" placeholder="Enter your name">
+        <label class="label" for="name">3. Your name</label>
+        <input type="text" id="name" class="input" maxlength="24" autocomplete="nickname" placeholder="Enter your name">
       </div>
 
       <div class="msg err" id="err" role="alert" style="margin:10px 0"></div>
-      <button class="btn btn-primary btn-lg btn-block" type="submit" id="joinBtn">Join</button>
+      <button class="btn primary lg block" type="submit" id="joinBtn">Join</button>
     </form>
   </main>
 
@@ -54,13 +45,13 @@
       </div>
       <div class="tb-score"><div class="score" id="tbScore">0</div><small>School score</small></div>
     </section>
-    <section class="stage">
+    <section class="pstage">
       <button id="buzzer" type="button" disabled>Locked</button>
       <div class="status" id="status" aria-live="polite"></div>
     </section>
-    <div class="row" style="justify-content:center">
-      <span class="pill off" id="conn">Connecting</span>
-      <span class="pill off">Room <span id="room"></span></span>
+    <div class="pills">
+      <span class="chip" id="conn">Connecting</span>
+      <span class="chip">Room <span id="room"></span></span>
     </div>
   </main>
 
@@ -69,6 +60,7 @@
   <script src="/common.js"></script>
   <script>
     const $ = (id) => document.getElementById(id);
+    document.body.insertAdjacentHTML('afterbegin', '<div class="bgfx stage">' + stageLayers({ orbs: [[6, 30, 120, 3], [90, 22, 150, 4]], sparks: [[20, 18], [70, 14, .8], [12, 60], [88, 52, .8]] }) + '</div>');
     const params = new URLSearchParams(location.search);
     const savedKey = (c) => 'pic_player_' + c;
     const getSaved = (c) => { try { return JSON.parse(safeGet(savedKey(c))); } catch { return null; } };
@@ -150,7 +142,7 @@
       sock = createSocket({
         onStatus(ok) {
           $('conn').textContent = ok ? 'Online' : 'Reconnecting';
-          $('conn').className = 'pill ' + (ok ? 'open' : 'off');
+          
         },
         onOpen() {
           const sv = getSaved(code);

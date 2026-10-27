@@ -28,10 +28,23 @@ const PAGES = {
   '/style.css': 'style.css',
   '/common.js': 'common.js',
   '/pic-logo.png': 'pic-logo.png',
+  '/Unbounded.woff': 'Unbounded.woff',
+  '/PlusJakartaSans.woff': 'PlusJakartaSans.woff',
 };
 for (const [route, file] of Object.entries(PAGES)) {
-  app.get(route, (_req, res) => res.sendFile(path.join(__dirname, file)));
+  const opts = file.endsWith('.woff') ? { maxAge: '30d' } : undefined;
+  app.get(route, (_req, res) => res.sendFile(path.join(__dirname, file), opts));
 }
+
+// Optional host login: set the HOST_PASSWORD environment variable to require a password
+// before anyone can create a new competition room. Contestants never need it.
+const HOST_PASSWORD = process.env.HOST_PASSWORD || '';
+const sha = (s) => crypto.createHash('sha256').update(String(s ?? '')).digest();
+const passwordOk = (given) => !HOST_PASSWORD || crypto.timingSafeEqual(sha(given), sha(HOST_PASSWORD));
+app.get('/api/config', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ hostPassword: !!HOST_PASSWORD });
+});
 
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 400 * 1024 });
@@ -226,6 +239,9 @@ wss.on('connection', (ws) => {
     // ----- before the socket is identified -----
     if (!ws.ctx) {
       if (m.t === 'host_create') {
+        if (!passwordOk(m.password)) {
+          return setTimeout(() => send(ws, { t: 'host_fail', reason: 'password' }), 700);
+        }
         const room = createRoom();
         room.host = ws;
         ws.ctx = { room, role: 'host' };

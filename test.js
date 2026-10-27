@@ -1,5 +1,6 @@
 // End-to-end smoke test: starts the server, simulates a host and students from three schools.
 process.env.PORT = process.env.PORT || '3456';
+process.env.HOST_PASSWORD = 'letmein';
 const assert = require('assert');
 const WebSocket = require('ws');
 const { server } = require('./server');
@@ -13,8 +14,16 @@ const tx = (w, m) => w.send(JSON.stringify(m));
 const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
 
 (async () => {
+  // --- host password ---
+  const badpw = await open();
+  tx(badpw, { t: 'host_create', password: 'nope' });
+  await wait(1000);
+  assert.strictEqual(last(badpw, 'host_fail').reason, 'password', 'wrong password refused');
+  assert.ok(!last(badpw, 'host_ok'));
+  assert.strictEqual((await fetch(`http://localhost:${process.env.PORT}/api/config`).then((r) => r.json())).hostPassword, true);
+
   const host = await open();
-  tx(host, { t: 'host_create' });
+  tx(host, { t: 'host_create', password: 'letmein' });
   await wait(100);
   const { code } = last(host, 'host_ok');
   assert.match(code, /^[A-Z]{4}$/);
@@ -105,7 +114,7 @@ const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJA
   assert.ok(last(p2, 'kicked'), 'students of a removed school are removed');
 
   // --- pages ---
-  for (const p of ['/healthz', '/', '/host', '/play', '/style.css', '/common.js', '/pic-logo.png']) {
+  for (const p of ['/healthz', '/', '/host', '/play', '/style.css', '/common.js', '/pic-logo.png', '/Unbounded.woff', '/PlusJakartaSans.woff']) {
     assert.strictEqual((await fetch(base + p)).status, 200, p);
   }
   assert.strictEqual((await fetch(base + '/server.js')).status, 404, 'server.js is not served');
